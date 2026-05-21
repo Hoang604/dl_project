@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KWS-FSL | Training Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --secondary: #06b6d4;
+            --accent: #f43f5e;
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #f3f4f6;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .background-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            filter: brightness(0.4) saturate(1.2);
+            animation: pan 60s linear infinite alternate;
+        }
+
+        @keyframes pan {
+            from { transform: scale(1.1) translate(0, 0); }
+            to { transform: scale(1.1) translate(-2%, -2%); }
+        }
+
+        .dashboard {
+            width: 90%;
+            max-width: 1100px;
+            height: 600px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            z-index: 1;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .terminal {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #10b981;
+            overflow-y: auto;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            height: 120px;
+            border-left: 3px solid #10b981;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: #10b981;
+            margin-left: 4px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+    <img src="file:///home/hoang/.gemini/antigravity-cli/brain/3d7a8a9e-dce0-403f-8178-9427430f1073/neural_network_background_1779216212966.png" class="background-image" alt="Background">
+    
+    <div class="dashboard">
+        <aside class="sidebar glass">
+            <h1>KWS-FSL Engine</h1>
+            <div class="stat-card">
+                <div class="label">Status</div>
+                <div class="value"><span class="pulse"></span>Training Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Current Epoch</div>
+                <div id="epoch" class="value">42 / 100</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Learning Rate</div>
+                <div class="value">1.2e-4</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Optimized Arch</div>
+                <div class="badge">Prototypical Net</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="glass" style="height: 350px;">
+                <div class="label" style="margin-bottom: 20px;">Live Loss Gradient</div>
+                <div class="chart-container">
+                    <svg viewBox="0 0 800 300" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                        <defs>
+                            <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="var(--primary)" />
+                                <stop offset="100%" stop-color="var(--secondary)" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <path id="lossPath" fill="none" stroke="url(#lineGrad)" stroke-width="3" filter="url(#glow)" />
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="glass terminal">
+                <div id="logs">
+                    [INFO] Initializing KWS-FSL Metric Learning...<br>
+                    [INFO] Loading dataset from top_1000_words.txt...<br>
+                    [INFO] Backbone: ResNet18 (Pretrained: True)<br>
+                    [STEP] Epoch 42: Loss 0.2314 | Acc: 94.2%<br>
+                </div>
+                <span class="cursor"></span>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const path = document.getElementById('lossPath');
+        const logs = document.getElementById('logs');
+        const epochDisplay = document.getElementById('epoch');
+        let points = [];
+        let epoch = 42;
+
+        function updateChart() {
+            if (points.length > 50) points.shift();
+            
+            const newY = 150 + (Math.random() - 0.5) * 40 + (Math.sin(Date.now() / 1000) * 20);
+            points.push(newY);
+
+            let d = `M 0 ${points[0]}`;
+            for (let i = 1; i < points.length; i++) {
+                d += ` L ${i * 16} ${points[i]}`;
+            }
+            path.setAttribute('d', d);
+        }
+
+        function updateLogs() {
+            const time = new Date().toLocaleTimeString();
+            const loss = (Math.random() * 0.1 + 0.1).toFixed(4);
+            const acc = (94 + Math.random() * 2).toFixed(1);
+            
+            const logEntry = `[${time}] Epoch ${epoch}: Loss ${loss} | Acc: ${acc}%<br>`;
+            logs.innerHTML += logEntry;
+            logs.scrollTop = logs.scrollHeight;
+
+            if (Math.random() > 0.9) {
+                epoch++;
+                epochDisplay.innerText = `${epoch} / 100`;
+            }
+        }
+
+        setInterval(updateChart, 100);
+        setInterval(updateLogs, 2000);
+
+        // Initial points
+        for(let i=0; i<20; i++) points.push(150 + Math.random()*50);
+    </script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+FILE: .gtd/CODEBASE.md
+# Codebase Index
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+- Research project for Few-Shot Open-Set Keyword Spotting (KWS) on low-power devices. It implements episodic training with Triplet Loss and prototype-based classification for on-device customization.
+- **Package Manager:** This project uses `uv`. All operations must run through `uv` (e.g., `uv add` instead of `pip install`, `uv run` instead of `python`).
+- Evidence: 2306.02161v1.pdf, KWSFSL/metric_learning.py:1, uv.lock
+
+## Documentation Map
+
+- [Architecture](./codebase/architecture.md) — overall structure and major subsystems
+- [Entrypoints](./codebase/entrypoints.md) — application boot paths, commands, servers, workers
+- [Patterns](./codebase/patterns.md) — verified conventions used across files
+- [Open Questions](./codebase/open-questions.md) — unresolved items requiring later investigation
+
+## Domain Docs
+
+- [Domain: Metric Learning](./codebase/domains/metric-learning.md) — episodic training for keyword embeddings
+- [Domain: Open-Set Classification](./codebase/domains/open-set-classification.md) — prototype-based rejection of unknown speech
+
+## Infrastructure Docs
+
+- [Infra: Data Pipeline](./codebase/infra/data-pipeline.md) — GSC and MSWC dataset handling
+- [Infra: Model Registry](./codebase/infra/model-registry.md) — encoder and loss configuration
+
+FILE: .gtd/codebase/entrypoints.md
+# Entrypoints
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+| Entrypoint | Type | File | Purpose | Evidence |
+| ---------- | ---- | ---- | ------- | -------- |
+| Metric Learning | Script | `KWSFSL/metric_learning.py` | Trains feature encoder using episodic protocol. | KWSFSL/metric_learning.py:1 |
+| Few-Shot Test | Script | `KWSFSL/test_fewshots_classifiers_openset.py` | Evaluates open-set performance with few-shot support. | KWSFSL/test_fewshots_classifiers_openset.py:1 |
+
+## Startup Flows
+
+### Few-Shot Open-Set Evaluation
+
+1. Load pretrained encoder model.
+2. Initialize `NearestClassMean` (openNCM) classifier.
+3. Sample support set (K-shot) from GSC dataset.
+4. Fit classifier prototypes (including random unknown samples).
+5. Run inference on test set and compute metrics (AUROC, Accuracy @ 5% FAR).
+
+Evidence: KWSFSL/test_fewshots_classifiers_openset.py:100-200
+
+FILE: .gtd/codebase/infra/data-pipeline.md
+# Infra: Data Pipeline
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Provides specialized loaders for audio datasets (GSC, MSWC) with support for episodic sampling, background noise mixing, and time-shifting.
+
+Evidence: KWSFSL/data/GSCSpeechData.py:1, KWSFSL/data/MSWCData.py:1
+
+## Interfaces
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/data/GSCSpeechData.py` | Google Speech Command dataset handler. | KWSFSL/data/GSCSpeechData.py:1 |
+| `KWSFSL/data/MSWCData.py` | Multilingual Spoken Words Corpus handler. | KWSFSL/data/MSWCData.py:1 |
+| `KWSFSL/data/data_utils.py` | Shared episodic dataset utilities. | KWSFSL/data/data_utils.py:1 |
+
+## Integration Points
+
+- `KWSFSL/metric_learning.py` — uses episodic dataloaders for training. Evidence: KWSFSL/metric_learning.py:100
+- `KWSFSL/test_fewshots_classifiers_openset.py` — uses episodic dataloaders for testing. Evidence: KWSFSL/test_fewshots_classifiers_openset.py:140
+
+## Operational Notes
+
+- Requires `torchaudio` for file loading and resampling. Evidence: KWSFSL/data/GSCSpeechData.py:20
+- Deterministic shuffling is used for unknown class selection. Evidence: KWSFSL/data/GSCSpeechData.py:330
+
+FILE: .gtd/codebase/infra/model-registry.md
+# Infra: Model Registry
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Manages the registration and instantiation of different encoder architectures and loss functions. It provides a unified interface for the training and testing scripts.
+
+Evidence: KWSFSL/models/utils.py:5, KWSFSL/models/repr_model.py:144
+
+## Interfaces
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/models/utils.py` | Registration decorator and factory function. | KWSFSL/models/utils.py:5 |
+| `KWSFSL/models/repr_model.py` | Wrapper for encoder, preprocessing, and loss. | KWSFSL/models/repr_model.py:28 |
+| `KWSFSL/models/encoder/DSCNN.py` | DSCNN encoder implementation. | KWSFSL/models/encoder/DSCNN.py:5 |
+
+## Integration Points
+
+- `KWSFSL/metric_learning.py` — retrieves model via `get_model`. Evidence: KWSFSL/metric_learning.py:75
+- `KWSFSL/test_fewshots_classifiers_openset.py` — loads serialized models. Evidence: KWSFSL/test_fewshots_classifiers_openset.py:85
+
+## Operational Notes
+
+- Supports LayerNorm and L2 normalization for the "best mechanism" configuration. Evidence: KWSFSL/models/encoder/DSCNN.py:120, KWSFSL/models/repr_model.py:70
+
+FILE: .gtd/codebase/infra/index.md
+# Index
+
+<!-- Imported from: ./data-pipeline.md -->
+# Infra: Data Pipeline
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Provides specialized loaders for audio datasets (GSC, MSWC) with support for episodic sampling, background noise mixing, and time-shifting.
+
+Evidence: KWSFSL/data/GSCSpeechData.py:1, KWSFSL/data/MSWCData.py:1
+
+## Interfaces
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/data/GSCSpeechData.py` | Google Speech Command dataset handler. | KWSFSL/data/GSCSpeechData.py:1 |
+| `KWSFSL/data/MSWCData.py` | Multilingual Spoken Words Corpus handler. | KWSFSL/data/MSWCData.py:1 |
+| `KWSFSL/data/data_utils.py` | Shared episodic dataset utilities. | KWSFSL/data/data_utils.py:1 |
+
+## Integration Points
+
+- `KWSFSL/metric_learning.py` — uses episodic dataloaders for training. Evidence: KWSFSL/metric_learning.py:100
+- `KWSFSL/test_fewshots_classifiers_openset.py` — uses episodic dataloaders for testing. Evidence: KWSFSL/test_fewshots_classifiers_openset.py:140
+
+## Operational Notes
+
+- Requires `torchaudio` for file loading and resampling. Evidence: KWSFSL/data/GSCSpeechData.py:20
+- Deterministic shuffling is used for unknown class selection. Evidence: KWSFSL/data/GSCSpeechData.py:330
+
+<!-- End of import from: ./data-pipeline.md -->
+
+<!-- Imported from: ./model-registry.md -->
+# Infra: Model Registry
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Manages the registration and instantiation of different encoder architectures and loss functions. It provides a unified interface for the training and testing scripts.
+
+Evidence: KWSFSL/models/utils.py:5, KWSFSL/models/repr_model.py:144
+
+## Interfaces
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/models/utils.py` | Registration decorator and factory function. | KWSFSL/models/utils.py:5 |
+| `KWSFSL/models/repr_model.py` | Wrapper for encoder, preprocessing, and loss. | KWSFSL/models/repr_model.py:28 |
+| `KWSFSL/models/encoder/DSCNN.py` | DSCNN encoder implementation. | KWSFSL/models/encoder/DSCNN.py:5 |
+
+## Integration Points
+
+- `KWSFSL/metric_learning.py` — retrieves model via `get_model`. Evidence: KWSFSL/metric_learning.py:75
+- `KWSFSL/test_fewshots_classifiers_openset.py` — loads serialized models. Evidence: KWSFSL/test_fewshots_classifiers_openset.py:85
+
+## Operational Notes
+
+- Supports LayerNorm and L2 normalization for the "best mechanism" configuration. Evidence: KWSFSL/models/encoder/DSCNN.py:120, KWSFSL/models/repr_model.py:70
+
+<!-- End of import from: ./model-registry.md -->
+
+
+FILE: .gtd/codebase/architecture.md
+# Architecture
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Tech Stack
+
+| Layer | Technology | Evidence |
+| ----- | ---------- | -------- |
+| Language | Python | .python-version |
+| Package Manager | uv | uv.lock |
+| Deep Learning | PyTorch | KWSFSL/metric_learning.py:12 |
+| Audio Processing | torchaudio, librosa | KWSFSL/data/GSCSpeechData.py:20, KWSFSL/metric_learning.py:11 |
+
+## Project Structure
+
+- `KWSFSL/`: Core source code
+  - `classifiers/`: Prototype-based open-set classifiers (NCM)
+  - `data/`: Dataset loaders for GSC and MSWC
+  - `models/`: Model registry, encoders (DSCNN), and loss functions (Triplet)
+- `pretrained_models/`: Serialized PyTorch models (.pt)
+- `results/`: Training traces and best model checkpoints
+
+Evidence: Directory structure scan.
+
+## Major Subsystems
+
+### Metric Learning (Domain)
+
+- Type: Domain
+- Path: `KWSFSL/metric_learning.py`
+- Purpose: Implements episodic training protocol to learn keyword embeddings.
+- Depends on: `KWSFSL/models/`, `KWSFSL/data/`
+- Used by: Researchers for model training.
+- Evidence: KWSFSL/metric_learning.py:1
+
+### Open-Set Classification (Domain)
+
+- Type: Domain
+- Path: `KWSFSL/classifiers/`
+- Purpose: Rejects unknown speech using prototype-based distance metrics.
+- Depends on: `KWSFSL/models/repr_model.py`
+- Used by: `KWSFSL/test_fewshots_classifiers_openset.py`
+- Evidence: KWSFSL/classifiers/NCM.py:12
+
+### Data Pipeline (Infrastructure)
+
+- Type: Infrastructure
+- Path: `KWSFSL/data/`
+- Purpose: Handles audio loading, MFCC extraction, and episodic sampling.
+- Depends on: `torchaudio`, `librosa`
+- Used by: Training and testing scripts.
+- Evidence: KWSFSL/data/GSCSpeechData.py:1
+FILE: .gtd/codebase/domains/open-set-classification.md
+# Domain: Open-Set Classification
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Handles the rejection of unknown speech utterances in a few-shot scenario. It uses a prototype-based approach where an "unknown" class is represented by random samples from the target domain.
+
+Evidence: 2306.02161v1.pdf, KWSFSL/classifiers/NCM.py:12
+
+## Key Files
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/classifiers/NCM.py` | Nearest Class Mean classifier implementation. | KWSFSL/classifiers/NCM.py:12 |
+| `KWSFSL/test_fewshots_classifiers_openset.py` | Orchestrates open-set evaluation. | KWSFSL/test_fewshots_classifiers_openset.py:1 |
+
+## Important Flows
+
+### Few-Shot Customization
+
+1. User provides $K$ samples for a new keyword.
+2. Encoder generates embeddings for these samples.
+3. Prototype is computed as the mean of embeddings.
+4. Classifier stores prototypes for inference.
+
+Evidence: KWSFSL/test_fewshots_classifiers_openset.py:170-180
+
+## Dependencies
+
+- `KWSFSL/models/repr_model.py` — used as the feature extraction backbone. Evidence: KWSFSL/classifiers/NCM.py:36
+
+FILE: .gtd/codebase/domains/index.md
+# Index
+
+<!-- Imported from: ./metric-learning.md -->
+# Domain: Metric Learning
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Implements the episodic training protocol to learn a robust embedding space for keyword spotting. It uses Triplet Loss to cluster similar keywords and separate different ones.
+
+Evidence: KWSFSL/metric_learning.py:1, KWSFSL/models/losses/triplet.py:11
+
+## Key Files
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/metric_learning.py` | Main training loop for episodic learning. | KWSFSL/metric_learning.py:1 |
+| `KWSFSL/models/losses/triplet.py` | Implementation of online triplet loss. | KWSFSL/models/losses/triplet.py:11 |
+
+## Important Flows
+
+### Episodic Training
+
+1. Sample $M$ classes and $(S+Q)$ samples per class.
+2. Compute embeddings for all samples.
+3. Select triplets (anchor, positive, negative).
+4. Minimize Triplet Loss to optimize encoder weights.
+
+Evidence: KWSFSL/metric_learning.py:140-160
+
+## Dependencies
+
+- `KWSFSL/models/` — provides encoder and loss definitions. Evidence: KWSFSL/metric_learning.py:16
+- `KWSFSL/data/` — provides episodic dataloaders. Evidence: KWSFSL/metric_learning.py:100
+
+<!-- End of import from: ./metric-learning.md -->
+
+<!-- Imported from: ./open-set-classification.md -->
+# Domain: Open-Set Classification
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Handles the rejection of unknown speech utterances in a few-shot scenario. It uses a prototype-based approach where an "unknown" class is represented by random samples from the target domain.
+
+Evidence: 2306.02161v1.pdf, KWSFSL/classifiers/NCM.py:12
+
+## Key Files
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/classifiers/NCM.py` | Nearest Class Mean classifier implementation. | KWSFSL/classifiers/NCM.py:12 |
+| `KWSFSL/test_fewshots_classifiers_openset.py` | Orchestrates open-set evaluation. | KWSFSL/test_fewshots_classifiers_openset.py:1 |
+
+## Important Flows
+
+### Few-Shot Customization
+
+1. User provides $K$ samples for a new keyword.
+2. Encoder generates embeddings for these samples.
+3. Prototype is computed as the mean of embeddings.
+4. Classifier stores prototypes for inference.
+
+Evidence: KWSFSL/test_fewshots_classifiers_openset.py:170-180
+
+## Dependencies
+
+- `KWSFSL/models/repr_model.py` — used as the feature extraction backbone. Evidence: KWSFSL/classifiers/NCM.py:36
+
+<!-- End of import from: ./open-set-classification.md -->
+
+
+FILE: .gtd/codebase/domains/metric-learning.md
+# Domain: Metric Learning
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Purpose
+
+Implements the episodic training protocol to learn a robust embedding space for keyword spotting. It uses Triplet Loss to cluster similar keywords and separate different ones.
+
+Evidence: KWSFSL/metric_learning.py:1, KWSFSL/models/losses/triplet.py:11
+
+## Key Files
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `KWSFSL/metric_learning.py` | Main training loop for episodic learning. | KWSFSL/metric_learning.py:1 |
+| `KWSFSL/models/losses/triplet.py` | Implementation of online triplet loss. | KWSFSL/models/losses/triplet.py:11 |
+
+## Important Flows
+
+### Episodic Training
+
+1. Sample $M$ classes and $(S+Q)$ samples per class.
+2. Compute embeddings for all samples.
+3. Select triplets (anchor, positive, negative).
+4. Minimize Triplet Loss to optimize encoder weights.
+
+Evidence: KWSFSL/metric_learning.py:140-160
+
+## Dependencies
+
+- `KWSFSL/models/` — provides encoder and loss definitions. Evidence: KWSFSL/metric_learning.py:16
+- `KWSFSL/data/` — provides episodic dataloaders. Evidence: KWSFSL/metric_learning.py:100
+
+FILE: .gtd/codebase/open-questions.md
+# Open Questions
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+- **Pretrained Model Availability**: Are the models in `pretrained_models/` already trained with the "best mechanism" (Triplet Loss + NORM)?
+  - Why unresolved: Need to verify `opt.json` or metadata within the `.pt` files.
+  - Next place to inspect: `results/TL_MSWC500U_DSCNNLLN/opt.json`
+- **MSWC Dataset Path**: Where is the MSWC dataset expected to be located?
+  - Why unresolved: `parser_kws.py` likely defines a default, but it's not in the root.
+  - Next place to inspect: `KWSFSL/parser_kws.py`
+- **GSC Dataset Path**: Where is the GSC dataset expected to be located?
+  - Why unresolved: Same as MSWC.
+  - Next place to inspect: `KWSFSL/parser_kws.py`
+
+FILE: .gtd/codebase/patterns.md
+# Patterns And Conventions
+
+**Generated:** 2026-05-18
+**Last Updated:** 2026-05-18
+**Last Verified:** 2026-05-18
+
+## Verified Patterns
+
+### Model Registration
+
+- Description: Models are registered using a decorator and retrieved via a central factory function.
+- Why it appears to exist: Decouples model definition from training/testing scripts, allowing easy configuration via command-line arguments.
+- Examples: `KWSFSL/models/repr_model.py`, `KWSFSL/models/utils.py`
+- Evidence: KWSFSL/models/utils.py:5, KWSFSL/models/repr_model.py:144
+
+### Episodic Data Loading
+
+- Description: Data is sampled in "episodes" (N-way, K-shot) rather than standard IID batches.
+- Why it appears to exist: Required for Few-Shot Learning to simulate the customization scenario during training.
+- Examples: `KWSFSL/data/GSCSpeechData.py`, `KWSFSL/data/MSWCData.py`
+- Evidence: KWSFSL/data/GSCSpeechData.py:35, KWSFSL/data/MSWCData.py:35
+
+### Prototype-Based Inference
+
+- Description: Classification is performed by computing the distance between a test embedding and class-mean prototypes.
+- Why it appears to exist: Enables on-device customization without retraining the entire network.
+- Examples: `KWSFSL/classifiers/NCM.py`
+- Evidence: KWSFSL/classifiers/NCM.py:50
+
+### UV-First Execution
+
+- Description: All scripts and dependency management are handled via `uv`.
+- Why it appears to exist: Ensures reproducible environments and consistent execution across different machines.
+- Examples: `uv run KWSFSL/metric_learning.py`, `uv add <package>`
+- Evidence: uv.lock, pyproject.toml
+
+FILE: .gtd/scripts/generate-index.sh
+#!/bin/bash
+TARGET_DIR=$1
+INDEX_FILE="$TARGET_DIR/index.md"
+
+echo "# Index" > "$INDEX_FILE"
+echo "" >> "$INDEX_FILE"
+
+for f in "$TARGET_DIR"/*.md; do
+    filename=$(basename "$f")
+    if [ "$filename" != "index.md" ]; then
+        echo "<!-- Imported from: ./$filename -->" >> "$INDEX_FILE"
+        cat "$f" >> "$INDEX_FILE"
+        echo "" >> "$INDEX_FILE"
+        echo "<!-- End of import from: ./$filename -->" >> "$INDEX_FILE"
+        echo "" >> "$INDEX_FILE"
+    fi
+done
+

@@ -197,12 +197,12 @@ To evaluate KWS system performance under a strict false activation budget, we se
 
 ## 8. Experimental Results and Paper Comparison
 
-We evaluated both trained representation models—the Convolutional DSCNN-L model (`results/dscnnlln/best_model.pt`) and the Vision Transformer model (`results/vit_experiment/best_model.pt`)—under open-set episodic configurations.
+We evaluated both trained representation models—the Convolutional DSCNN-L model (`results/dscnnlln/best_model.pt`) and the Vision Transformer model (`results/vit_experiment/best_model.pt`)—under open-set episodic configurations using the official evaluation script (`KWSFSL/test_fewshots_classifiers_openset.py`, 25 episodes, per-episode threshold averaging).
 
 ### Experimental Setup
 * **Pretrained Backbones:**
   * **DSCNN-L:** 407k parameters, trained with Triplet Loss and Layer Normalization (NORM).
-  * **ViT Transformer:** 4.9M parameters, trained with Triplet Loss.
+  * **ViT Transformer:** 4.9M parameters, trained with Triplet Loss, patch size (4,1), 8 heads, 6 layers.
 * **Classifier:** openNearest Class Mean (openNCM) using Euclidean distance.
 * **Evaluation Words Split (21 words):**
   * **Positive Target Set (In-Vocabulary):** `junior`, `lay`, `material`, `mixed`, `thomas`, `exist`, `fruit`, `girls`, `boys`, `break`, `educated`
@@ -210,33 +210,34 @@ We evaluated both trained representation models—the Convolutional DSCNN-L mode
 
 ---
 
-### 1. Open-Set Rejection Results (5-Shot)
-To verify open-set keyword rejection performance against out-of-vocabulary distractors, we measured the Area Under ROC (`aucROC`) and False Rejection Rate (`FRR`) under a strict False Acceptance Rate (`FAR`) budget of $5\%$ ($\text{FAR} \le 5\%$).
+### 1. 5-Way 5-Shot Open-Set Classification Results
+In this setup, the model classifies inputs into one of 5 positive target classes while rejecting out-of-vocabulary unknown words. Due to lower classification complexity (5 choices instead of 10), both models exceed the paper's 10-way benchmarks.
 
-| Metric | Paper (5-shot 10-way) | **Our DSCNN-L (5-shot 5-way)** | **Our ViT (5-shot 5-way)** | Comparison / Gain (DSCNN-L) |
-| :--- | :--- | :--- | :--- | :--- |
-| **aucROC** | `93.0%` | **`96.28%`** | **`94.91%`** | **Better** (+3.28%) |
-| **FRR @ 5% FAR** | `26.0%` | **`5.96%`** | **`18.59%`** | **Better** (-20.04%) |
-
-*Both architectures successfully exceed the reference paper's benchmarks. The DSCNN-L achieves a remarkably low False Rejection Rate of 5.96% at 5% FAR, which represents a massive absolute error reduction of over 20% compared to the reference paper.*
+| Metric | Paper (5-shot 10-way) | **Our DSCNN-L (5-shot 5-way)** | **Our ViT (5-shot 5-way)** |
+| :--- | :--- | :--- | :--- |
+| **aucROC** | `93.0%` | **`95.55%`** (std 1.68%) | **`94.42%`** (std 2.15%) |
+| **Accuracy @ 5% FAR (`acc_prec95`)** | `71.0%` | **`77.89%`** (std 6.83%) | **`76.84%`** (std 7.57%) |
+| **False Rejection Rate (`frr_prec95`)** | `26.0%` | **`20.45%`** (std 7.67%) | **`21.22%`** (std 8.12%) |
+| **Closed-Set Accuracy (`accuracy_pos`)** | — | **`93.47%`** (std 2.42%) | **`94.10%`** (std 4.88%) |
 
 ---
 
-### 2. Closed-Set Classification Accuracy Results
-To separate open-set rejection thresholding from pure prototype classification ability, we measured closed-set multiclass accuracy on targets across K-shot and N-way scaling:
+### 2. 10-Way 5-Shot Open-Set Classification Results
+To establish a direct, head-to-head comparison with the reference paper, we evaluated both models in a 10-way classification setting.
 
-| Setup | **Our DSCNN-L Accuracy** | **Our ViT Accuracy** | Comparison |
+| Metric | Paper (5-shot 10-way) | **Our DSCNN-L (5-shot 10-way)** | **Our ViT (5-shot 10-way)** |
 | :--- | :--- | :--- | :--- |
-| **5-Way 1-Shot** | **`90.15%`** (std 4.62%) | **`84.80%`** (std 6.88%) | DSCNN-L +5.35% |
-| **5-Way 5-Shot** | **`95.66%`** (std 1.95%) | **`93.70%`** (std 4.29%) | DSCNN-L +1.96% |
-| **5-Way 10-Shot** | **`95.79%`** (std 2.43%) | **`95.79%`** (std 3.73%) | Equal |
-| **10-Way 5-Shot** | **`91.73%`** (std 1.73%) | **`89.35%`** (std 3.12%) | DSCNN-L +2.38% |
+| **aucROC** | `93.0%` | **`93.85%`** (std 1.63%) | `91.99%` (std 2.55%) |
+| **Accuracy @ 5% FAR (`acc_prec95`)** | `71.0%` | **`71.79%`** (std 8.41%) | `63.45%` (std 10.34%) |
+| **False Rejection Rate (`frr_prec95`)** | `26.0%` | **`26.06%`** (std 9.14%) | `34.33%` (std 11.41%) |
+| **Closed-Set Accuracy (`accuracy_pos`)** | — | **`91.22%`** (std 3.06%) | `89.41%` (std 2.48%) |
 
 ---
 
 ### Key Discussion
-* **Inductive Bias & Efficiency:** The DSCNN-L model consistently outperforms the ViT model under low-data constraints (e.g. 1-shot and 5-shot). This is attributed to the convolutional inductive bias, which is highly effective at exploiting grid-like spectrotemporal patterns in MFCC speech features without needing massive data volumes.
-* **Transformer Scaling:** The ViT model matches the DSCNN-L at 10-shot support scaling (**95.79%**), confirming its capacity to build high-fidelity keyword representations as support prototypes become richer.
-* **High Rejection Fidelity:** The high open-set `aucROC` scores (**96.28%** for DSCNN-L, **94.91%** for ViT) validate that the metric learning Triplet Loss objective establishes extremely compact clusters, allowing robust boundary separation of target words from OOD noise.
+* **DSCNN-L Matches Paper:** At 10-way, DSCNN-L meets or slightly exceeds the paper's benchmarks across all metrics (`aucROC` +0.85%, `acc_prec95` +0.79%, `frr_prec95` on par at 26.06%).
+* **ViT Underperforms at 10-Way:** The ViT model falls below the paper's 10-way benchmarks (`aucROC` -1.01%, `acc_prec95` -7.55%, `frr_prec95` +8.33%). This is attributed to the lack of convolutional inductive bias: the ViT requires more data to learn spatial structure from MFCC features, and the 21-word MSWC evaluation vocabulary is insufficient for its 4.9M parameter capacity.
+* **ViT Competitive at 5-Way:** At reduced task complexity (5-way), the ViT performs comparably to DSCNN-L, suggesting the Transformer architecture has learned meaningful representations but struggles with the harder open-set discrimination at higher N-way.
+* **Inductive Bias Advantage:** The DSCNN-L's depthwise separable convolutions naturally exploit the grid-like spectrotemporal patterns in MFCC features, making it more parameter-efficient and robust for few-shot KWS on small vocabularies.
 
 
